@@ -23,10 +23,11 @@ st.markdown("""
         background-color: white; padding: 20px; border-radius: 6px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;
         margin-bottom: 12px; border-top: 4px solid #2c5aa0;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
-    /* UPDATED: Font size reduced to fit within cards */
-    .kpi-value { font-size: 20px; font-weight: bold; color: #1a3a52; }
-    .kpi-label { font-size: 10px; color: #999; text-transform: uppercase; }
+    /* EXACT SAME FONT FOR ALL KPI CARDS - CENTERED */
+    .kpi-value { font-size: 28px; font-weight: bold; color: #1a3a52; line-height: 1.2; margin: 10px 0; }
+    .kpi-label { font-size: 10px; color: #999; text-transform: uppercase; margin: 0; }
     .chart-box {
         background-color: white; padding: 15px; border-radius: 6px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px;
@@ -186,19 +187,20 @@ with col1:
     
     st.markdown('<div class="chart-box"><div class="chart-title">Summary Chart</div>', unsafe_allow_html=True)
     
+    # FIX 1: FUNNEL TEXT SIZE LARGER + WHITE COLOR
     fig1 = go.Figure(go.Funnel(
         y=['Dials', 'Calls', 'DM', 'DW', 'Prop Sent', 'Prop Sold'], 
         x=[dials, calls, dm, dw, prop_sent, prop_sold], 
         textinfo="value+label", 
-        textposition="inside",  # Ye line values ko bar ke andar rakhegi
-        insidetextanchor="middle", # Ye values ko center mein align karegi
+        textposition="inside",
+        insidetextanchor="middle",
         marker=dict(color=['#1a3a52', '#2c5aa0', "#366599", "#266092", "#4b7eb1", "#5e91bd"])
     ))
     
     fig1.update_layout(
-        height=280, 
+        height=300, 
         margin=dict(l=20, r=20, t=0, b=20),
-        font=dict(color="white") # Taki dark colors par text saaf nazar aaye
+        font=dict(color="white", size=14)
     )
     
     st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
@@ -213,10 +215,11 @@ with col1:
         if col_s_dw2c in filt_sales.columns: conv_cols[col_s_dw2c] = lambda x: pd.to_numeric(x, errors='coerce').mean() * 100
         if conv_cols:
             monthly_data = filt_sales.groupby(col_s_month).agg(conv_cols).fillna(0)
+            # ALL TEXT WHITE
             fig2 = go.Figure()
             for c, name, color in zip([col_s_d2c, col_s_c2dm, col_s_dm2dw, col_s_dw2c], ['Dials→Calls %', 'Calls→DM %', 'DM→DW %', 'DW→Contract %'], ['#1a3a52', '#2c5aa0', '#5a8cc7', '#8bb3d6']):
-                if c in monthly_data.columns: fig2.add_trace(go.Bar(name=name, x=monthly_data.index, y=monthly_data[c], marker_color=color, text=[f"{v:.1f}%" for v in monthly_data[c]], textposition='auto'))
-            fig2.update_layout(height=280, barmode='group', margin=dict(l=20, r=20, t=0, b=30), yaxis_range=[0, 100])
+                if c in monthly_data.columns: fig2.add_trace(go.Bar(name=name, x=monthly_data.index, y=monthly_data[c], marker_color=color, text=[f"{v:.1f}%" for v in monthly_data[c]], textposition='auto', textfont=dict(color='white', size=12)))
+            fig2.update_layout(height=280, barmode='group', margin=dict(l=20, r=20, t=0, b=30), yaxis_range=[0, 100], font=dict(color="white", size=11))
             st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -229,11 +232,12 @@ with col2:
     if col_e_expectation in filt_eval.columns:
         exp_vals = pd.to_numeric(filt_eval[col_e_expectation], errors='coerce').dropna()
         low, good = len(exp_vals[exp_vals <= 3]), len(exp_vals[exp_vals > 3])
-        fig3 = go.Figure(data=[go.Pie(labels=['Low (≤3)', 'Good (>3)'], values=[low, good], marker=dict(colors=["#2c78c5", "#4498b9"]), textinfo='label+percent')])
-        fig3.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0))
+        fig3 = go.Figure(data=[go.Pie(labels=['Low (≤3)', 'Good (>3)'], values=[low, good], marker=dict(colors=["#2c78c5", "#4498b9"]), textinfo='label+percent', textfont=dict(color='white', size=12))])
+        fig3.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0), font=dict(color='white'))
         st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False})
     st.markdown('</div>', unsafe_allow_html=True)
     
+    # FIX 3: TRAINER CHART SIZE LARGER + BETTER X-AXIS ALIGNMENT
     st.markdown('<div class="chart-box"><div class="chart-title">Trainer Performance Comparison</div>', unsafe_allow_html=True)
     perf_cols = {col_e_content: 'Content', col_e_exercise: 'Exercise', col_e_facilitator: 'Facilitator', col_e_expectation: 'Expectation'}
     aggs = {k: (lambda x: pd.to_numeric(x, errors='coerce').mean()) for k in perf_cols.keys() if k in evaluation_df.columns}
@@ -242,11 +246,10 @@ with col2:
         fig4 = go.Figure()
         for k, name, color in zip(aggs.keys(), perf_cols.values(), ['#1a3a52', '#2c5aa0', '#5a8cc7', '#8bb3d6']):
             fig4.add_trace(go.Bar(x=trainer_perf.index, y=trainer_perf[k], name=name, marker_color=color))
-        fig4.update_layout(height=280, barmode='group', margin=dict(l=20, r=20, t=0, b=60), xaxis_tickangle=-45)
+        fig4.update_layout(height=320, barmode='group', margin=dict(l=20, r=20, t=0, b=100), xaxis_tickangle=-45, xaxis=dict(tickfont=dict(size=11)))
         st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar': False})
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # UPDATED: MONTH-BY-MONTH TREND WITH CALENDAR SORTING
     st.markdown('<div class="chart-box"><div class="chart-title">Month-by-Month Trend Analysis</div>', unsafe_allow_html=True)
     try:
         if col_e_date in evaluation_df.columns:
@@ -257,7 +260,6 @@ with col2:
             
             trend_aggs = {k: (lambda x: pd.to_numeric(x, errors='coerce').mean()) for k in perf_cols.keys() if k in evaluation_df.columns}
             if trend_aggs:
-                # Sorting by month number (1 to 12)
                 monthly_trend = eval_df_temp.groupby(['month_num', 'month_name']).agg(trend_aggs).reset_index().sort_values('month_num')
                 fig5 = go.Figure()
                 for k, name, color in zip(trend_aggs.keys(), perf_cols.values(), ['#1a3a52', '#2c5aa0', '#5a8cc7', '#8bb3d6']):
@@ -274,14 +276,20 @@ with col3:
     np, oc, ov = safe_sum(filt_fin, col_f_net_profit), safe_sum(filt_fin, col_f_overdue_count), safe_sum(filt_fin, col_f_overdue_val)
     
     kf1, kf2, kf3 = st.columns(3)
+    # Format large numbers with K/M suffix to fit in cards
+    sl_fmt = f"{int(sl/1000)}K" if sl >= 1000 else str(int(sl))
+    cg_fmt = f"{int(cg/1000)}K" if cg >= 1000 else str(int(cg))
+    np_fmt = f"{int(np/1000)}K" if np >= 1000 else str(int(np))
+    ov_fmt = f"{int(ov/1000)}K" if ov >= 1000 else str(int(ov))
+    
     with kf1: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{cf:.1f}</div><div class="kpi-label">Cashflow</div></div>', unsafe_allow_html=True)
-    with kf2: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{int(sl):,}</div><div class="kpi-label">Total Sales</div></div>', unsafe_allow_html=True)
-    with kf3: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{int(cg):,}</div><div class="kpi-label">Total COGS</div></div>', unsafe_allow_html=True)
+    with kf2: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{sl_fmt}</div><div class="kpi-label">Total Sales</div></div>', unsafe_allow_html=True)
+    with kf3: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{cg_fmt}</div><div class="kpi-label">Total COGS</div></div>', unsafe_allow_html=True)
     
     kf4, kf5, kf6 = st.columns(3)
-    with kf4: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{int(np):,}</div><div class="kpi-label">Net Profit</div></div>', unsafe_allow_html=True)
+    with kf4: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{np_fmt}</div><div class="kpi-label">Net Profit</div></div>', unsafe_allow_html=True)
     with kf5: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{int(oc)}</div><div class="kpi-label">Overdue Count</div></div>', unsafe_allow_html=True)
-    with kf6: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{int(ov):,}</div><div class="kpi-label">Overdue Val</div></div>', unsafe_allow_html=True)
+    with kf6: st.markdown(f'<div class="kpi-card"><div class="kpi-value">{ov_fmt}</div><div class="kpi-label">Overdue Val</div></div>', unsafe_allow_html=True)
     
     st.markdown('<div class="chart-box"><div class="chart-title">Net Profit/Loss Over Month</div>', unsafe_allow_html=True)
     if col_f_month in filt_fin.columns:
